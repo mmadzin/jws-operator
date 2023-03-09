@@ -1,4 +1,9 @@
 vendor/*
+config/crd/bases/*
+config/manifests/bases/*
+bundle/*
+config/rbac/role.yaml
+bundle.Dockerfile
 
 # Binaries for programs and plugins
 *.exe
