@@ -93,6 +93,11 @@ test: manifests generate fmt vet envtest ## Run tests.
 realtest: test
 	REALCLUSTER="YES" KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -timeout 60m ./... -coverprofile cover.out
 
+.PHONY: mod-vendor
+mod-vendor: 
+	go mod vendor
+	go mod verify
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
@@ -106,6 +111,23 @@ docker-build: test ## Build docker image with the manager.
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+.PHONY: all 
+all: controller-gen mod-vendor manifests docker-build bundle bundle-build
+
+.PHONY: clean
+clean:
+	rm -rf config/crd/bases
+	rm -rf config/manifests/bases
+	rm -rf bundle
+	rm -rf config/rbac/role.yaml
+	rm -rf bundle.Dockerfile
+	rm -rf api/v1alpha1/zz_generated.deepcopy.go
+
+.PHONY: clean-all
+clean-all: clean
+	rm -rf bin
+	rm -rf vendor
 
 ##@ Deployment
 
