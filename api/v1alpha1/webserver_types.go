@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,6 +20,8 @@ type WebServerSpec struct {
 	// The desired number of replicas for the application
 	// +kubebuilder:validation:Minimum=0
 	Replicas int32 `json:"replicas"`
+	// SecurityContext defines the security capabilities required to run the application.
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 	// Use Session Clustering
 	UseSessionClustering bool `json:"useSessionClustering,omitempty"`
 	// (Deployment method 1) Application image

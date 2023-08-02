@@ -93,6 +93,25 @@ test: manifests generate fmt vet envtest ## Run tests.
 realtest: test
 	REALCLUSTER="YES" KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -timeout 60m ./... -coverprofile cover.out
 
+.PHONY: mod-vendor
+mod-vendor:
+	go mod vendor
+	go mod verify
+
+.PHONY: clean
+clean:
+	rm -rf config/crd/bases
+	rm -rf config/manifests/bases
+	rm -rf bundle
+	rm -rf config/rbac/role.yaml
+	rm -rf bundle.Dockerfile
+	rm -rf api/v1alpha1/zz_generated.deepcopy.go
+
+.PHONY: clean-all
+clean-all: clean
+	rm -rf bin
+	rm -rf vendor
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
@@ -106,6 +125,11 @@ docker-build: test ## Build docker image with the manager.
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+## Build all components in docker
+.PHONY: docker-build-all
+docker-build-all: controller-gen mod-vendor manifests docker-build bundle bundle-build 
+
 
 ##@ Deployment
 
@@ -125,19 +149,19 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.1)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.6.1)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.4)
+	$(call go-install-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.4)
 
 ENVTEST = $(shell pwd)/bin/setup-envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
+# go-install-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
+define go-install-tool
 @[ -f $(1) ] || { \
 set -e ;\
 TMP_DIR=$$(mktemp -d) ;\

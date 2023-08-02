@@ -834,7 +834,6 @@ func (r *WebServerReconciler) generateVolumePodBuilder(webServer *webserversv1al
 }
 
 // create the shell script to modify server.xml
-//
 func (r *WebServerReconciler) generateCommandForServerXml(webServer *webserversv1alpha1.WebServer) map[string]string {
 	cmd := make(map[string]string)
 	if r.getUseKUBEPing(webServer) {
@@ -860,7 +859,6 @@ func (r *WebServerReconciler) generateCommandForServerXml(webServer *webserversv
 }
 
 // create the shell script to pod builder
-//
 func (r *WebServerReconciler) generateCommandForBuider(script string) map[string]string {
 	cmd := make(map[string]string)
 	cmd["build.sh"] = script
