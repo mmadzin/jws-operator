@@ -579,7 +579,7 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 	return corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
-			SecurityContext: r.generateSeccompProfile(webServer),
+			SecurityContext:               r.generatePodSecurityContext(webServer),
 			TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
 			Containers: []corev1.Container{{
 				Name:            webServer.Spec.ApplicationName,
@@ -596,8 +596,8 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 					ContainerPort: 8080,
 					Protocol:      corev1.ProtocolTCP,
 				}},
-				Env:          r.generateEnvVars(webServer),
-				VolumeMounts: r.generateVolumeMounts(webServer),
+				Env:             r.generateEnvVars(webServer),
+				VolumeMounts:    r.generateVolumeMounts(webServer),
 				SecurityContext: r.generateSecurityContext(webServer),
 			}},
 			Volumes: r.generateVolumes(webServer),
@@ -705,8 +705,8 @@ func (r *WebServerReconciler) generateEnvVars(webServer *webserversv1alpha1.WebS
 }
 
 // Create the securityContext for the pods we are starting.
-func (r *WebServerReconciler) generateSeccompProfile(webServer *webserversv1alpha1.WebServer) *corev1.SeccompProfile {
-        return &corev1.PodSecurityContext{
+func (r *WebServerReconciler) generatePodSecurityContext(webServer *webserversv1alpha1.WebServer) *corev1.PodSecurityContext {
+	return &corev1.PodSecurityContext{
 		RunAsNonRoot: &[]bool{true}[0],
 		SeccompProfile: &corev1.SeccompProfile{
 			Type: corev1.SeccompProfileTypeRuntimeDefault,
@@ -714,13 +714,12 @@ func (r *WebServerReconciler) generateSeccompProfile(webServer *webserversv1alph
 	}
 }
 
-
 // Create the securityContext for the pods we are starting.
 func (r *WebServerReconciler) generateSecurityContext(webServer *webserversv1alpha1.WebServer) *corev1.SecurityContext {
-        return &corev1.SecurityContext{
-                RunAsNonRoot:  &[]bool{true}[0],
-                AllowPrivilegeEscalation:  &[]bool{false}[0],
-                Capabilities: &corev1.Capabilities{
+	return &corev1.SecurityContext{
+		RunAsNonRoot:             &[]bool{true}[0],
+		AllowPrivilegeEscalation: &[]bool{false}[0],
+		Capabilities: &corev1.Capabilities{
 			Drop: []corev1.Capability{
 				"ALL",
 			},

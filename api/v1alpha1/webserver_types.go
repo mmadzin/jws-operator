@@ -25,7 +25,7 @@ type WebServerSpec struct {
 	// (Deployment method 1) Application image
 	WebImage *WebImageSpec `json:"webImage,omitempty"`
 	// (Deployment method 2) Imagestream
-	WebImageStream *WebImageStreamSpec `json:"webImageStream,omitempty"`
+	WebImageStream  *WebImageStreamSpec     `json:"webImageStream,omitempty"`
 	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
 }
 

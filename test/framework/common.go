@@ -27,15 +27,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-/* Result for the demo webapp
-{
-  "counter": 2,
-  "id": "2244ED88EBC16E2956F63107405D7CC9",
-  "new": false,
-  "server": "10.129.2.169",
-  "hostname": "test-app-1-psvcz",
-  "newtest": "2020"
-}
+/*
+Result for the demo webapp
+
+	{
+	  "counter": 2,
+	  "id": "2244ED88EBC16E2956F63107405D7CC9",
+	  "new": false,
+	  "server": "10.129.2.169",
+	  "hostname": "test-app-1-psvcz",
+	  "newtest": "2020"
+	}
 */
 type DemoResult struct {
 	Counter  int
@@ -697,7 +699,8 @@ func isOperatorLocal() bool {
 }
 
 // generateLabelsForWebServer return a map of labels that are used for identification
-//  of objects belonging to the particular WebServer instance
+//
+//	of objects belonging to the particular WebServer instance
 func generateLabelsForWebServer(webServer *webserversv1alpha1.WebServer) map[string]string {
 	labels := map[string]string{
 		"deploymentConfig": webServer.Spec.ApplicationName,
