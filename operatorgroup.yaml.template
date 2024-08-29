@@ -1,8 +1,12 @@
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
+  annotations:
+    olm.providedAPIs: WebServer.v1alpha1.web.servers.org
   name: jws-operator-group
   namespace: @NAMESPACE@
+  generateName: @NAMESPACE@-
 spec:
   targetNamespaces:
   - @NAMESPACE@
+  upgradeStrategy: Default
