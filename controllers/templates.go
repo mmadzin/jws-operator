@@ -701,6 +701,9 @@ func (r *WebServerReconciler) generateEnvVars(webServer *webserversv1alpha1.WebS
 			Value: "/env/my-files/test.sh",
 		})
 	}
+
+	env = append(env, webServer.Spec.EnvironmentVariables...)
+
 	return env
 }
 

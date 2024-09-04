@@ -21,7 +21,7 @@ type WebServerSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	Replicas int32 `json:"replicas"`
 	// Environment Variables for deployment
-	EnvironmentVariables string `json:"environemntVariables,omitempty"`
+	EnvironmentVariables []corev1.EnvVar `json:"environmentVariables,omitempty"`
 	// Use Session Clustering
 	UseSessionClustering bool `json:"useSessionClustering,omitempty"`
 	// (Deployment method 1) Application image
