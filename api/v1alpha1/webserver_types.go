@@ -24,6 +24,8 @@ type WebServerSpec struct {
 	EnvironmentVariables []corev1.EnvVar `json:"environmentVariables,omitempty"`
 	// Use Session Clustering
 	UseSessionClustering bool `json:"useSessionClustering,omitempty"`
+	// Allow Insight Client
+	UseInsightClient bool `json:"useInsightClient,omitempty"`
 	// (Deployment method 1) Application image
 	WebImage *WebImageSpec `json:"webImage,omitempty"`
 	// (Deployment method 2) Imagestream

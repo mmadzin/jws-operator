@@ -576,6 +576,26 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 		health = webServer.Spec.WebImageStream.WebServerHealthCheck
 	}
 	terminationGracePeriodSeconds := int64(60)
+
+	ports := []corev1.ContainerPort{{
+		Name:          "jolokia",
+		ContainerPort: 8778,
+		Protocol:      corev1.ProtocolTCP,
+	}, {
+		Name:          "http",
+		ContainerPort: 8080,
+		Protocol:      corev1.ProtocolTCP,
+	},
+	}
+
+	if webServer.Spec.UseInsightClient {
+		ports = append(ports, corev1.ContainerPort{
+			Name:          "insights",
+			ContainerPort: 9404,
+			Protocol:      corev1.ProtocolTCP,
+		})
+	}
+
 	return corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
@@ -587,15 +607,7 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 				ImagePullPolicy: "Always",
 				ReadinessProbe:  r.generateReadinessProbe(webServer, health),
 				LivenessProbe:   r.generateLivenessProbe(webServer, health),
-				Ports: []corev1.ContainerPort{{
-					Name:          "jolokia",
-					ContainerPort: 8778,
-					Protocol:      corev1.ProtocolTCP,
-				}, {
-					Name:          "http",
-					ContainerPort: 8080,
-					Protocol:      corev1.ProtocolTCP,
-				}},
+				Ports:           ports,
 				Env:             r.generateEnvVars(webServer),
 				VolumeMounts:    r.generateVolumeMounts(webServer),
 				SecurityContext: r.generateSecurityContext(webServer),
@@ -603,8 +615,36 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 			Volumes: r.generateVolumes(webServer),
 			// Add the imagePullSecret to imagePullSecrets
 			ImagePullSecrets: r.generateimagePullSecrets(webServer),
+			InitContainers:   r.generateInitContainer(webServer),
 		},
 	}
+}
+
+// generateInitComtainer for Insights
+func (r *WebServerReconciler) generateInitContainer(webServer *webserversv1alpha1.WebServer) []corev1.Container {
+	if webServer.Spec.UseInsightClient {
+		return []corev1.Container{{
+			Name:            "download-insights-agent",
+			Image:           "quay.io/insights-runtimes/runtimes-agent-init:latest",
+			ImagePullPolicy: "Always",
+			Command: []string{
+				"cp",
+				"/agent/runtimes-agent.jar",
+				"/usr/share/runtimes-agent/",
+			},
+			SecurityContext: r.generateSecurityContext(webServer),
+			VolumeMounts:    r.generateInsightsVolumeMounts(),
+		}}
+	}
+	return nil
+}
+
+// generate VolumeMounts for Insights
+func (r *WebServerReconciler) generateInsightsVolumeMounts() []corev1.VolumeMount {
+	return []corev1.VolumeMount{{
+		MountPath: "/usr/share/runtimes-agent/",
+		Name:      "insights-shared-data",
+	}}
 }
 
 // generateimagePullSecrets
@@ -763,6 +803,10 @@ func (r *WebServerReconciler) generateVolumeMounts(webServer *webserversv1alpha1
 		}
 	}
 
+	if webServer.Spec.UseInsightClient {
+		volm = append(volm, r.generateInsightsVolumeMounts()...)
+	}
+
 	return volm
 }
 
@@ -817,6 +861,15 @@ func (r *WebServerReconciler) generateVolumes(webServer *webserversv1alpha1.WebS
 				},
 			})
 		}
+	}
+
+	if webServer.Spec.UseInsightClient {
+		vol = append(vol, corev1.Volume{
+			Name: "insights-shared-data",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
 	}
 
 	return vol

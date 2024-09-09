@@ -302,6 +302,9 @@ spec:
                         type: string
                     type: object
                 type: object
+              useInsightClient:
+                description: Allow Insight Client
+                type: boolean
               useSessionClustering:
                 description: Use Session Clustering
                 type: boolean
