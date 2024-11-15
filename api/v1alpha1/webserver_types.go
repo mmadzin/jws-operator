@@ -32,6 +32,8 @@ type WebServerSpec struct {
 	TLSSecret string `json:"tlsSecret,omitempty"`
 	// TLSPassword passphrase for the key in the client.key
 	TLSPassword string `json:"tlsPassword,omitempty"`
+	// Allow Insight Client
+	UseInsightClient bool `json:"useInsightClient,omitempty"`
 	// (Deployment method 1) Application image
 	WebImage *WebImageSpec `json:"webImage,omitempty"`
 	// (Deployment method 2) Imagestream

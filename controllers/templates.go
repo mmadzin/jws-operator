@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"os"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -730,6 +731,24 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 	}
 	terminationGracePeriodSeconds := int64(60)
 
+	ports := []corev1.ContainerPort{{
+		Name:          "jolokia",
+		ContainerPort: 8778,
+		Protocol:      corev1.ProtocolTCP,
+	}, {
+		Name:          "http",
+		ContainerPort: 8080,
+		Protocol:      corev1.ProtocolTCP,
+	}, {
+		Name:          "admin",
+		ContainerPort: 9404,
+		Protocol:      corev1.ProtocolTCP,
+	}, {
+		Name:          "https",
+		ContainerPort: 8443,
+		Protocol:      corev1.ProtocolTCP,
+	}}
+
 	template := corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
@@ -746,23 +765,7 @@ func (r *WebServerReconciler) generatePodTemplate(webServer *webserversv1alpha1.
 				ReadinessProbe:  r.generateReadinessProbe(webServer, health),
 				LivenessProbe:   r.generateLivenessProbe(webServer, health),
 				Resources:       generateResources(webServer.Spec.Resources),
-				Ports: []corev1.ContainerPort{{
-					Name:          "jolokia",
-					ContainerPort: 8778,
-					Protocol:      corev1.ProtocolTCP,
-				}, {
-					Name:          "http",
-					ContainerPort: 8080,
-					Protocol:      corev1.ProtocolTCP,
-				}, {
-					Name:          "admin",
-					ContainerPort: 9404,
-					Protocol:      corev1.ProtocolTCP,
-				}, {
-					Name:          "https",
-					ContainerPort: 8443,
-					Protocol:      corev1.ProtocolTCP,
-				}},
+				Ports:           ports,
 				SecurityContext: generateSecurityContext(webServer.Spec.SecurityContext),
 				Env:             r.generateEnvVars(webServer),
 				VolumeMounts:    r.generateVolumeMounts(webServer),
@@ -870,6 +873,7 @@ func (r *WebServerReconciler) generateEnvVars(webServer *webserversv1alpha1.WebS
 			Value: value,
 		},
 	}
+
 	if webServer.Spec.EnableAccessLogs {
 		env = append(env, corev1.EnvVar{
 			Name:  "ENABLE_ACCESS_LOG",
@@ -892,6 +896,25 @@ func (r *WebServerReconciler) generateEnvVars(webServer *webserversv1alpha1.WebS
 	}
 
 	env = append(env, webServer.Spec.EnvironmentVariables...)
+
+	if webServer.Spec.UseInsightClient {
+		javaToolOptions := " -javaagent:/opt/runtimes-agent.jar=name=" + webServer.Spec.ApplicationName + ";is_ocp=true;token=dummy;debug=true;base_url=" + os.Getenv("INSIGHTS_URL")
+		updated := false
+
+		for i := 0; i < len(env); i++ {
+			if env[i].Name == "JAVA_TOOL_OPTIONS" {
+				env[i].Value = env[i].Value + javaToolOptions
+				updated = true
+			}
+		}
+
+		if !updated {
+			env = append(env, corev1.EnvVar{
+				Name:  "JAVA_TOOL_OPTIONS",
+				Value: javaToolOptions,
+			})
+		}
+	}
 
 	return env
 }
@@ -1061,6 +1084,7 @@ func (r *WebServerReconciler) generateVolumes(webServer *webserversv1alpha1.WebS
 			},
 		})
 	}
+
 	return vol
 }
 

@@ -366,6 +366,9 @@ spec:
                   server.key the server key and optional ca.cert the CA cert of the
                   client certificates
                 type: string
+              useInsightClient:
+                description: Allow Insight Client
+                type: boolean
               useSessionClustering:
                 description: Use Session Clustering
                 type: boolean
