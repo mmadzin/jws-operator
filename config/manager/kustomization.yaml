@@ -3,6 +3,6 @@ resources:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: controller
+- digest: sha256:8077ee9bc8519160374c272b783d8dca554a53295ded26902f2239e57d3f78cf
+  name: controller
   newName: quay.io/mmadzin/jws-operator
-  newTag: new-sdk

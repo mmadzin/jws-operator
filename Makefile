@@ -70,8 +70,6 @@ CONTAINER_TOOL ?= docker
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
-NAMESPACE_FOR_TESTING ?= jws-operator-tests
-
 .PHONY: all
 all: build
 
@@ -131,26 +129,17 @@ setup-test-e2e: ## Set up a Kind cluster for e2e tests if it does not exist
 			echo "Kind cluster '$(KIND_CLUSTER)' already exists. Skipping creation." ;; \
 		*) \
 			echo "Creating Kind cluster '$(KIND_CLUSTER)'..."; \
-			$(KIND) create cluster --name $(KIND_CLUSTER) ; \
-			$(KUBECTL) create namespace $(NAMESPACE_FOR_TESTING) ;; \
+			$(KIND) create cluster --name $(KIND_CLUSTER) ;; \
 	esac
 
 .PHONY: test-e2e
-test-e2e: setup-test-e2e install deploy generate fmt vet ## Run the e2e tests. Expected an isolated environment using Kind.
+test-e2e: setup-test-e2e manifests generate fmt vet ## Run the e2e tests. Expected an isolated environment using Kind.
 	KIND_CLUSTER=$(KIND_CLUSTER) go test ./test/e2e/ -v -ginkgo.v
 	$(MAKE) cleanup-test-e2e
 
 .PHONY: cleanup-test-e2e
 cleanup-test-e2e: ## Tear down the Kind cluster used for e2e tests
 	@$(KIND) delete cluster --name $(KIND_CLUSTER)
-
-.PHONY: test-e2e-real
-test-e2e-real: setup-namespace install deploy generate fmt vet
-	go test ./test/e2e/ -v -ginkgo.v
-
-.PHONY: setup-namespace
-setup-namespace:
-	$(KUBECTL) create namespace $(NAMESPACE_FOR_TESTING) || true
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter

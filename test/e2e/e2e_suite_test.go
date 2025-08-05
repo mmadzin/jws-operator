@@ -17,27 +17,13 @@ limitations under the License.
 package e2e
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"path/filepath"
+	"os/exec"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	//	"k8s.io/client-go/tools/clientcmd"
-
-	buildv1 "github.com/openshift/api/build/v1"
-	imagev1 "github.com/openshift/api/image/v1"
-	routev1 "github.com/openshift/api/route/v1"
-	webserversv1alpha1 "github.com/web-servers/jws-operator/api/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/web-servers/jws-operator/test/utils"
 )
@@ -51,30 +37,10 @@ var (
 	// isCertManagerAlreadyInstalled will be set true when CertManager CRDs be found on the cluster
 	isCertManagerAlreadyInstalled = false
 
-	cfg       *rest.Config
-	k8sClient client.Client
-	testEnv   *envtest.Environment
-	ctx       context.Context
-	thetest   *testing.T
-	username  string
-
-	retryInterval = time.Second * 5
-	timeout       = time.Minute * 10
+	// projectImage is the name of the image which will be build and loaded
+	// with the code source changes to be tested.
+	projectImage = "example.com/jws-operator:v0.0.1"
 )
-
-// namespace where the project is deployed in
-//const namespace = "jws-operator-tests"
-
-var useExistingCluster bool
-
-// serviceAccountName created for the project
-const serviceAccountName = "jws-operator-controller-manager"
-
-// metricsServiceName is the name of the metrics service of the project
-const metricsServiceName = "jws-operator-controller-manager-metrics-service"
-
-// metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
-const metricsRoleBindingName = "jws-operator-metrics-binding"
 
 // TestE2E runs the end-to-end (e2e) test suite for the project. These tests execute in an isolated,
 // temporary environment to validate project changes with the purposed to be used in CI jobs.
@@ -82,48 +48,21 @@ const metricsRoleBindingName = "jws-operator-metrics-binding"
 // CertManager.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	thetest = t
 	_, _ = fmt.Fprintf(GinkgoWriter, "Starting jws-operator integration test suite\n")
 	RunSpecs(t, "e2e suite")
 }
 
 var _ = BeforeSuite(func() {
-	By("Before suite")
-	useExistingCluster = true
+	By("building the manager(Operator) image")
+	cmd := exec.Command("make", "docker-build", fmt.Sprintf("IMG=%s", projectImage))
+	_, err := utils.Run(cmd)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to build the manager(Operator) image")
 
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:  []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		UseExistingCluster: &useExistingCluster,
-	}
-
-	cfg, err := testEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
-
-	err = webserversv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	// Route
-	err = routev1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	// Deployment
-	err = appsv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	// ImageStream
-	err = imagev1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	// BuildConfig
-	err = buildv1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	//+kubebuilder:scaffold:scheme
-
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	// TODO(user): If you want to change the e2e test vendor from Kind, ensure the image is
+	// built and available before running the tests. Also, remove the following block.
+	By("loading the manager(Operator) image on Kind")
+	err = utils.LoadImageToKindClusterWithName(projectImage)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred(), "Failed to load the manager(Operator) image into Kind")
 
 	// The tests-e2e are intended to run on a temporary cluster that is created and destroyed for testing.
 	// To prevent errors when tests run in environments with CertManager already installed,
