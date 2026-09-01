@@ -127,7 +127,6 @@ var _ = Describe("VolumeTest", Ordered, func() {
 			By("Creating WebServer with VolumeClaimTemplate")
 
 			pvcSpec := corev1.PersistentVolumeClaimSpec{
-				StorageClassName: &standardClass,
 				AccessModes: []corev1.PersistentVolumeAccessMode{
 					corev1.ReadWriteOnce,
 				},
